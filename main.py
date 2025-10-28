@@ -35,12 +35,12 @@ if input_type == "Upload Image":
         image = Image.open(uploaded_file)
         col1, col2 = st.columns(2)
         with col1:
-            st.image(image, caption="🖼️ Uploaded Image", use_column_width=True)
+            st.image(image, caption="🖼️ Uploaded Image", use_container_width=True)
         if st.button("Start Detection"):
             results = model.predict(source=np.array(image), conf=conf_threshold, imgsz=640)
             result_img = Image.fromarray(results[0].plot())
             with col2:
-                st.image(result_img, caption="✅ Detected Image", use_column_width=True)
+                st.image(result_img, caption="✅ Detected Image", use_container_width=True)
 
             boxes = results[0].boxes
             with st.expander("📦 Detected Defects Details"):
@@ -78,7 +78,7 @@ elif input_type == "Upload Video":
                 if len(boxes) > 0:
                     captured_count += 1
                     result_img = Image.fromarray(results[0].plot())
-                    st.image(result_img, caption=f"Frame #{captured_count} with defects", use_column_width=True)
+                    st.image(result_img, caption=f"Frame #{captured_count} with defects", use_container_width=True)
                     with st.expander("📦 Details"):
                         for i, box in enumerate(boxes, 1):
                             cls = int(box.cls[0])
@@ -112,7 +112,7 @@ elif input_type == "Camera Stream":
                 captured_count += 1
                 result_img = Image.fromarray(results[0].plot())
                 st.subheader(f"✅ Defect Detected! Captured Frame #{captured_count}")
-                st.image(result_img, use_column_width=True)
+                st.image(result_img, use_container_width=True)
                 with st.expander("📦 Details"):
                     for i, box in enumerate(boxes, 1):
                         cls = int(box.cls[0])
