@@ -11,7 +11,7 @@ st.title("Defect Detection App")
 
 # --- Sidebar ---
 st.sidebar.header("⚙️ Settings")
-MODEL_PATH = st.sidebar.text_input("Model path", "short shot_case lhd.pt")
+MODEL_PATH = st.sidebar.text_input("Model path", "short shot_case blower jk.pt")
 conf_threshold = st.sidebar.slider("Confidence threshold", 0.1, 1.0, 0.25)
 input_type = st.sidebar.radio("Select input type", ["Upload Image", "Upload Video", "Camera Stream"])
 
