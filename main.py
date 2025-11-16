@@ -11,20 +11,25 @@ st.title("Defect Detection App")
 
 # --- Sidebar ---
 st.sidebar.header("⚙️ Settings")
-MODEL_PATH = st.sidebar.text_input("Model path", "short shot_case blower jk.pt")
+uploaded_model = st.sidebar.file_uploader("📦 Upload YOLO Model (.pt)", type=["pt"])
 conf_threshold = st.sidebar.slider("Confidence threshold", 0.1, 1.0, 0.25)
 input_type = st.sidebar.radio("Select input type", ["Upload Image", "Upload Video", "Camera Stream"])
+
+# --- Save uploaded model to temp file ---
+if uploaded_model is not None:
+    temp_model_path = tempfile.NamedTemporaryFile(delete=False, suffix=".pt")
+    temp_model_path.write(uploaded_model.read())
+    temp_model_path = temp_model_path.name
+else:
+    st.sidebar.warning("Please upload a YOLO model (.pt) file to continue.")
+    st.stop()
 
 # --- Load model ---
 @st.cache_resource
 def load_model(model_path):
     return YOLO(model_path)
 
-if not os.path.exists(MODEL_PATH):
-    st.sidebar.error(f"❌ Model file not found: {MODEL_PATH}")
-    st.stop()
-
-model = load_model(MODEL_PATH)
+model = load_model(temp_model_path)
 
 # st.markdown("Upload an image/video or use camera stream to detect defects.")
 
