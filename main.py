@@ -7,7 +7,7 @@ import numpy as np
 import os
 from inference import get_model
 import supervision as sv
-from rfdetr import RFDETRBase
+from rfdetr import RFDETRMedium
 
 st.set_page_config(page_title="Defect Detection", page_icon="🔍", layout="wide")
 st.title("Defect Detection App")
