@@ -86,6 +86,7 @@ if input_type == "Upload Image":
                         st.write("No defects detected.")
                     else:
                         df = pd.DataFrame({
+                            "Class ID": [int(c) for c in detections.class_id],
                             "Class": [class_names[int(c)] for c in detections.class_id],
                             "Confidence": [round(float(x), 3) for x in detections.confidence],
                             "X1": [round(float(b[0]), 2) for b in detections.xyxy],
