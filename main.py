@@ -100,9 +100,19 @@ if input_type == "Upload Image":
                 for cls, conf in zip(detections.class_id, detections.confidence)
             ]
 
+            box_annotator = sv.BoxAnnotator(
+                color=sv.Color.from_hex("#FF0000"),  # red boxes
+                thickness=3,  # thicker lines
+            )
+
+            label_annotator = sv.LabelAnnotator(
+                color=sv.Color.from_hex("#FF0000"),  # matching label color
+                text_scale=0.5  # optional
+            )
+
             # Annotate image
-            annotated = sv.BoxAnnotator().annotate(image_np.copy(), detections)
-            annotated = sv.LabelAnnotator().annotate(annotated, detections, labels)
+            annotated = box_annotator.annotate(image_np.copy(), detections)
+            annotated = label_annotator.annotate(annotated, detections, labels)
 
             # Show results
             with col2:
