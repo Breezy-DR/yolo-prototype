@@ -1,6 +1,6 @@
 import streamlit as st
 from PIL import Image
-from ultralytics import YOLO
+from ultralytics import YOLO, Model
 import cv2
 import tempfile
 import numpy as np
@@ -27,7 +27,7 @@ else:
 # --- Load model ---
 @st.cache_resource
 def load_model(model_path):
-    return YOLO(model_path)
+    return Model(model_path)
 
 model = load_model(temp_model_path)
 
