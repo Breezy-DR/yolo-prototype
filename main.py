@@ -5,6 +5,8 @@ import cv2
 import tempfile
 import numpy as np
 import os
+from inference.models.detr import DetrForObjectDetection
+import supervision as sv
 
 st.set_page_config(page_title="Defect Detection", page_icon="🔍", layout="wide")
 st.title("Defect Detection App")
@@ -27,7 +29,9 @@ else:
 # --- Load model ---
 @st.cache_resource
 def load_model(model_path):
-    return RTDETR(model_path)
+    model = DetrForObjectDetection.from_pretrained(model_path)
+    print("Model loaded successfully.")
+    return model
 
 model = load_model(temp_model_path)
 
@@ -42,7 +46,8 @@ if input_type == "Upload Image":
         with col1:
             st.image(image, caption="🖼️ Uploaded Image", use_container_width=True)
         if st.button("Start Detection"):
-            results = model.predict(source=np.array(image), conf=conf_threshold, imgsz=640)
+            img = np.array(image)
+            pred = model.infer(img)
             result_img = Image.fromarray(results[0].plot())
             with col2:
                 st.image(result_img, caption="✅ Detected Image", use_container_width=True)

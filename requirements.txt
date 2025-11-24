@@ -2,3 +2,5 @@ streamlit
 pillow
 ultralytics
 opencv-python-headless
+inference
+supervision
