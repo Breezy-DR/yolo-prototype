@@ -7,30 +7,22 @@ import os
 import gc
 import torch
 import pandas as pd
-import supervision as sv
 from rfdetr import RFDETRMedium
 
-# ---------------------
-# Config
-# ---------------------
 APP_TITLE = "Defect Detection App"
-MODEL_FILENAME = "uploaded_model.pt"  # stable filename to keep cache consistent
-BOX_COLOR = sv.Color(r=255, g=0, b=0)
-BOX_THICKNESS = 6  # pretty thick boxes (keeps original appearance)
+MODEL_FILENAME = "uploaded_model.pt"
+BOX_COLOR = (0, 0, 255)  # OpenCV uses BGR, red is (0,0,255)
+BOX_THICKNESS = 6
 DEFAULT_CONF = 0.25
 
 st.set_page_config(page_title=APP_TITLE, page_icon="🔍", layout="wide")
 st.title(APP_TITLE)
 
-# ---------------------
-# Sidebar / Settings
-# ---------------------
 st.sidebar.header("⚙️ Settings")
 uploaded_model = st.sidebar.file_uploader("📦 Upload RF-DETR Model (.pt)", type=["pt"])
 conf_threshold = st.sidebar.slider("Confidence threshold", 0.01, 1.0, float(DEFAULT_CONF))
 input_type = st.sidebar.radio("Select input type", ["Upload Image", "Upload Video", "Camera Stream"])
 
-# Save uploaded model to a stable path so caching works reliably
 if uploaded_model is not None:
     with open(MODEL_FILENAME, "wb") as f:
         f.write(uploaded_model.read())
@@ -38,22 +30,11 @@ elif not os.path.exists(MODEL_FILENAME):
     st.sidebar.warning("Please upload a RF-DETR model (.pt) file to continue.")
     st.stop()
 
-# ---------------------
-# Load model (cached)
-# ---------------------
 @st.cache_resource
 def load_model(model_path: str):
-    # Load RFDETR model once and cache it across reruns
     model = RFDETRMedium(pretrain_weights=model_path)
-
-    # Some RFDETR versions expose `class_names`, others `names`
     class_names = getattr(model, "class_names", None) or getattr(model, "names", None)
-
-    # simple wrapper that keeps the model instance and names handy
-    return {
-        "model": model,
-        "class_names": class_names
-    }
+    return {"model": model, "class_names": class_names}
 
 _model_bundle = load_model(MODEL_FILENAME)
 model = _model_bundle["model"]
@@ -61,61 +42,40 @@ class_names = _model_bundle["class_names"] or []
 
 st.sidebar.success("✅ Model loaded and cached.")
 
-# ---------------------
-# Helper utilities
-# ---------------------
-box_annotator = sv.BoxAnnotator(thickness=BOX_THICKNESS, color=BOX_COLOR)
-label_annotator = sv.LabelAnnotator(text_thickness=BOX_THICKNESS, text_scale=1.5)
-
-
 def predict_image(np_image: np.ndarray, threshold: float):
-    """Run model.predict and return detections in supervision Detections form.
-    This isolates torch tensors and helps to cleanup memory after use."""
-    # RF-DETR model might accept PIL or numpy; we send numpy for lighter memory usage
-    result = model.predict(np_image, threshold=threshold)
-    return result
+    return model.predict(np_image, threshold=threshold)
 
+def annotate_cv2(image: np.ndarray, detections, class_names):
+    annotated = image.copy()
+    for cls_id, conf, box in zip(detections.class_id, detections.confidence, detections.xyxy):
+        x1, y1, x2, y2 = [int(coord) for coord in box]
+        label = f"{class_names[int(cls_id)]} {float(conf):.2f}"
+        cv2.rectangle(annotated, (x1, y1), (x2, y2), BOX_COLOR, thickness=BOX_THICKNESS)
+        (text_width, text_height), baseline = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 1.0, 2)
+        cv2.rectangle(annotated, (x1, y1 - text_height - 10), (x1 + text_width, y1), BOX_COLOR, -1)
+        cv2.putText(annotated, label, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255), 2)
+    return annotated
 
 def cleanup():
     gc.collect()
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
 
-# ---------------------
-# UI: Upload Image
-# ---------------------
 if input_type == "Upload Image":
     uploaded_file = st.file_uploader("📤 Upload an image", type=["jpg", "jpeg", "png"])
     if uploaded_file:
         pil_image = Image.open(uploaded_file).convert("RGB")
+        img_np = np.array(pil_image)
         col1, col2 = st.columns(2)
-
         with col1:
             st.image(pil_image, caption="🖼️ Uploaded Image", use_container_width=True)
-
-        run_detection = st.button("Start Detection")
-
-        if run_detection:
+        if st.button("Start Detection"):
             with st.spinner("Running detection..."):
-                # convert to numpy to avoid keeping PIL in session state
-                img_np = np.array(pil_image)
-
                 detections = predict_image(img_np, threshold=conf_threshold)
-
-                # Labels using model's class names (fallback to indices if missing)
-                labels = [
-                    f"{class_names[int(c)]} {float(conf):.2f}"
-                    for c, conf in zip(detections.class_id, detections.confidence)
-                ]
-
-                # annotate (keep color and thickness as specified)
-                annotated = box_annotator.annotate(img_np.copy(), detections)
-                annotated = label_annotator.annotate(annotated, detections, labels)
-
+                annotated = annotate_cv2(img_np, detections, class_names)
                 with col2:
                     st.image(annotated, caption="✅ Detected Image", use_container_width=True)
 
-                # Details table (adjustable)
                 with st.expander("📦 Detected Defects Details", expanded=False):
                     if len(detections) == 0:
                         st.write("No defects detected.")
@@ -129,10 +89,7 @@ if input_type == "Upload Image":
                             "Y2": [round(float(b[3]), 2) for b in detections.xyxy],
                         })
                         st.dataframe(df, use_container_width=True)
-
-                # cleanup to prevent memory growth across multiple uploads
                 cleanup()
-
 # ---------------------
 # UI: Upload Video (stop on first detection)
 # ---------------------
