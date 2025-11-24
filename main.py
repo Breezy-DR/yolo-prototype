@@ -7,7 +7,6 @@ import numpy as np
 import os
 from inference import get_model
 import supervision as sv
-from rfdetr.util.coco_classes import COCO_CLASSES
 from rfdetr import RFDETRMedium
 
 st.set_page_config(page_title="Defect Detection", page_icon="🔍", layout="wide")
@@ -69,7 +68,7 @@ if input_type == "Upload Image":
                     import pandas as pd
 
                     df = pd.DataFrame({
-                        "Class": [COCO_CLASSES[int(c)] for c in detections.class_id],
+                        "Class": [model.class_names[int(c)] for c in detections.class_id],
                         "Confidence": [round(float(x), 3) for x in detections.confidence],
                         "X1": [round(float(b[0]), 2) for b in detections.xyxy],
                         "Y1": [round(float(b[1]), 2) for b in detections.xyxy],
