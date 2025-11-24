@@ -100,9 +100,11 @@ if input_type == "Upload Image":
                 for cls, conf in zip(detections.class_id, detections.confidence)
             ]
 
+            color = sv.ColorPalette.from_hex(['#FF0000'])
+
             box_annotator = sv.BoxAnnotator(
                 thickness=4,
-                color=sv.Color.from_hex("#FF0000")  # FORCE RED
+                color=color  # FORCE RED
             )
 
             label_annotator = sv.LabelAnnotator(
