@@ -29,7 +29,7 @@ else:
 # --- Load model ---
 @st.cache_resource
 def load_model(model_path):
-    model = get_model(model_path)
+    model = get_model(model_id="autoplastik-b5ntq/9", model_path=model_path)
     print("Model loaded successfully.")
     return model
 
