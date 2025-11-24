@@ -11,7 +11,12 @@ from rfdetr import RFDETRMedium
 
 APP_TITLE = "Defect Detection App"
 MODEL_FILENAME = "uploaded_model.pt"
-BOX_COLOR = (255, 255, 0)  # OpenCV uses BGR, red is (0,0,255)
+BOX_COLOR = "#FF0000"
+hex_color = BOX_COLOR.lstrip('#')
+r = int(hex_color[0:2], 16)
+g = int(hex_color[2:4], 16)
+b = int(hex_color[4:6], 16)
+rgb_color = (r, g, b)
 BOX_THICKNESS = 6
 DEFAULT_CONF = 0.25
 
@@ -50,9 +55,9 @@ def annotate_cv2(image: np.ndarray, detections, class_names):
     for cls_id, conf, box in zip(detections.class_id, detections.confidence, detections.xyxy):
         x1, y1, x2, y2 = [int(coord) for coord in box]
         label = f"{class_names[int(cls_id)]} {float(conf):.2f}"
-        cv2.rectangle(annotated, (x1, y1), (x2, y2), BOX_COLOR, thickness=BOX_THICKNESS)
+        cv2.rectangle(annotated, (x1, y1), (x2, y2), rgb_color, thickness=BOX_THICKNESS)
         (text_width, text_height), baseline = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 1.0, 2)
-        cv2.rectangle(annotated, (x1, y1 - text_height - 10), (x1 + text_width, y1), BOX_COLOR, -1)
+        cv2.rectangle(annotated, (x1, y1 - text_height - 10), (x1 + text_width, y1), rgb_color, -1)
         cv2.putText(annotated, label, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255), 2)
     return annotated
 
