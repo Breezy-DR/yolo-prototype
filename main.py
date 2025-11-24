@@ -30,7 +30,7 @@ else:
 # --- Load model ---
 @st.cache_resource
 def load_model(model_path):
-    model = RFDETRBase(pretrain_weights=model_path)
+    model = RFDETRMedium(pretrain_weights=model_path)
 
     model.optimize_for_inference()
     st.success("✅ Model loaded successfully!")
