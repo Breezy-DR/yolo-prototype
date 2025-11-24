@@ -94,6 +94,8 @@ if input_type == "Upload Image":
             # Run model
             detections = model.predict(image_np, threshold=conf_threshold)
 
+            detections = sv.Detections.from_inference(detections)
+
             # Prepare labels
             labels = [
                 f"{model.class_names[int(cls)]} {conf:.2f}"
@@ -101,18 +103,25 @@ if input_type == "Upload Image":
             ]
 
             box_annotator = sv.BoxAnnotator(
-                color=sv.Color.from_hex("#FF0000"),  # red boxes
-                thickness=3,  # thicker lines
+                thickness=4,
+                color=sv.Color.from_hex("#FF0000")  # FORCE RED
             )
 
             label_annotator = sv.LabelAnnotator(
-                color=sv.Color.from_hex("#FF0000"),  # matching label color
-                text_scale=0.5  # optional
+                text_thickness=2,
+                text_scale=0.7,
             )
 
-            # Annotate image
-            annotated = box_annotator.annotate(image_np.copy(), detections)
-            annotated = label_annotator.annotate(annotated, detections, labels)
+            annotated = box_annotator.annotate(
+                scene=image_np.copy(),
+                detections=detections
+            )
+
+            annotated = label_annotator.annotate(
+                scene=annotated,
+                detections=detections,
+                labels=labels
+            )
 
             # Show results
             with col2:
