@@ -7,6 +7,7 @@ import numpy as np
 import os
 from inference import get_model
 import supervision as sv
+from rfdetr.util.coco_classes import COCO_CLASSES
 from rfdetr import RFDETRMedium
 
 st.set_page_config(page_title="Defect Detection", page_icon="🔍", layout="wide")
@@ -48,24 +49,36 @@ if input_type == "Upload Image":
         with col1:
             st.image(image, caption="🖼️ Uploaded Image", use_container_width=True)
         if st.button("Start Detection"):
-            img = np.array(image)
-            pred = model.infer(img)
-            result_img = Image.fromarray(results[0].plot())
+            detections = model.predict(image, threshold=0.5)
+            labels = [
+                f"{COCO_CLASSES[class_id]} {confidence:.2f}"
+                for class_id, confidence
+                in zip(detections.class_id, detections.confidence)
+            ]
+            annotated_image = image.copy()
+            annotated_image = sv.BoxAnnotator().annotate(annotated_image, detections)
+            annotated_image = sv.LabelAnnotator().annotate(annotated_image, detections, labels)
             with col2:
-                st.image(result_img, caption="✅ Detected Image", use_container_width=True)
+                st.image(annotated_image, caption="✅ Detected Image", use_container_width=True)
 
-            boxes = results[0].boxes
             with st.expander("📦 Detected Defects Details"):
-                if len(boxes) == 0:
+
+                if len(detections) == 0:
                     st.write("No defects detected.")
                 else:
-                    for i, box in enumerate(boxes, 1):
-                        cls = int(box.cls[0])
-                        conf = float(box.conf[0])
-                        xyxy = [round(x,2) for x in box.xyxy[0].tolist()]
-                        defect_name = model.names[cls]
-                        st.write(f"**{i}. Defect:** {defect_name} | **Confidence:** {conf:.2f}")
-                        st.caption(f"Bounding Box (xyxy): {xyxy}")
+                    import pandas as pd
+
+                    df = pd.DataFrame({
+                        "Class": [COCO_CLASSES[int(c)] for c in detections.class_id],
+                        "Confidence": [round(float(x), 3) for x in detections.confidence],
+                        "X1": [round(float(b[0]), 2) for b in detections.xyxy],
+                        "Y1": [round(float(b[1]), 2) for b in detections.xyxy],
+                        "X2": [round(float(b[2]), 2) for b in detections.xyxy],
+                        "Y2": [round(float(b[3]), 2) for b in detections.xyxy],
+                    })
+
+                    st.dataframe(df, use_container_width=True)
+
 
 # --- Upload Video (stop on first detection) ---
 elif input_type == "Upload Video":
