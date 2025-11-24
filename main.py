@@ -5,7 +5,7 @@ import cv2
 import tempfile
 import numpy as np
 import os
-from inference.models.detr import DetrForObjectDetection
+from inference import get_model
 import supervision as sv
 
 st.set_page_config(page_title="Defect Detection", page_icon="🔍", layout="wide")
@@ -29,7 +29,7 @@ else:
 # --- Load model ---
 @st.cache_resource
 def load_model(model_path):
-    model = DetrForObjectDetection.from_pretrained(model_path)
+    model = get_model(model_path)
     print("Model loaded successfully.")
     return model
 
