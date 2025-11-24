@@ -15,7 +15,7 @@ from rfdetr import RFDETRMedium
 # ---------------------
 APP_TITLE = "Defect Detection App"
 MODEL_FILENAME = "uploaded_model.pt"  # stable filename to keep cache consistent
-BOX_COLOR = (255, 0, 0)  # red in RGB
+BOX_COLOR = sv.Color(r=255, g=255, b=0).as_rgb() # (255, 255, 0)  # red in RGB
 BOX_THICKNESS = 4  # pretty thick boxes (keeps original appearance)
 DEFAULT_CONF = 0.25
 
@@ -64,7 +64,7 @@ st.sidebar.success("✅ Model loaded and cached.")
 # ---------------------
 # Helper utilities
 # ---------------------
-box_annotator = sv.BoxAnnotator(thickness=BOX_THICKNESS, box_color=BOX_COLOR)
+box_annotator = sv.BoxAnnotator(thickness=BOX_THICKNESS, color=BOX_COLOR)
 label_annotator = sv.LabelAnnotator()
 
 
