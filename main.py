@@ -110,6 +110,7 @@ if input_type == "Upload Image":
             label_annotator = sv.LabelAnnotator(
                 text_thickness=2,
                 text_scale=0.7,
+                color=color
             )
 
             annotated = box_annotator.annotate(
