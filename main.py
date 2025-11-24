@@ -7,6 +7,7 @@ import numpy as np
 import os
 from inference import get_model
 import supervision as sv
+from rfdetr import RFDETRBase
 
 st.set_page_config(page_title="Defect Detection", page_icon="🔍", layout="wide")
 st.title("Defect Detection App")
@@ -29,8 +30,10 @@ else:
 # --- Load model ---
 @st.cache_resource
 def load_model(model_path):
-    model = get_model(model_id="autoplastik-b5ntq/9", model_path=model_path)
-    print("Model loaded successfully.")
+    model = RFDETRBase(pretrain_weights=model_path)
+
+    model.optimize_for_inference()
+    st.success("✅ Model loaded successfully!")
     return model
 
 model = load_model(temp_model_path)
