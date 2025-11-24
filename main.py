@@ -15,7 +15,7 @@ from rfdetr import RFDETRMedium
 # ---------------------
 APP_TITLE = "Defect Detection App"
 MODEL_FILENAME = "uploaded_model.pt"  # stable filename to keep cache consistent
-BOX_COLOR = sv.Color(r=255, g=255, b=0).as_rgb() # (255, 255, 0)  # red in RGB
+BOX_COLOR = sv.Color(r=255, g=255, b=0) # (255, 255, 0)  # red in RGB
 BOX_THICKNESS = 4  # pretty thick boxes (keeps original appearance)
 DEFAULT_CONF = 0.25
 
