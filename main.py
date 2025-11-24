@@ -51,7 +51,7 @@ if input_type == "Upload Image":
         if st.button("Start Detection"):
             detections = model.predict(image, threshold=0.5)
             labels = [
-                f"{COCO_CLASSES[class_id]} {confidence:.2f}"
+                f"{model.class_names[int(class_id)]} {confidence:.2f}"
                 for class_id, confidence
                 in zip(detections.class_id, detections.confidence)
             ]
