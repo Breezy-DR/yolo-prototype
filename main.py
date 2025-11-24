@@ -92,9 +92,7 @@ if input_type == "Upload Image":
             image_np = np.array(image)
 
             # Run model
-            detections_raw = model.predict(image_np, threshold=conf_threshold)
-
-            detections = sv.Detections.from_inference(detections_raw)
+            detections = model.predict(image_np, threshold=conf_threshold)
 
             # Prepare labels
             labels = [
