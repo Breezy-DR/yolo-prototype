@@ -65,7 +65,7 @@ st.sidebar.success("✅ Model loaded and cached.")
 # Helper utilities
 # ---------------------
 box_annotator = sv.BoxAnnotator(thickness=BOX_THICKNESS, color=BOX_COLOR)
-label_annotator = sv.LabelAnnotator(color=BOX_COLOR, text_thickness=BOX_THICKNESS, text_scale=1.5)
+label_annotator = sv.LabelAnnotator(text_thickness=BOX_THICKNESS, text_scale=1.5)
 
 
 def predict_image(np_image: np.ndarray, threshold: float):
