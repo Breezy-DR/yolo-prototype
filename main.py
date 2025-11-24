@@ -1,65 +1,116 @@
 import streamlit as st
 from PIL import Image
-from ultralytics import RTDETR
-import cv2
-import tempfile
 import numpy as np
+import tempfile
 import os
-from inference import get_model
+import gc
+import torch
+
 import supervision as sv
 from rfdetr import RFDETRMedium
 
+
+# ---------------------------------------------------------
+# Streamlit App Config
+# ---------------------------------------------------------
 st.set_page_config(page_title="Defect Detection", page_icon="🔍", layout="wide")
-st.title("Defect Detection App")
+st.title("RF-DETR Defect Detection")
 
-# --- Sidebar ---
+
+# ---------------------------------------------------------
+# Sidebar Controls
+# ---------------------------------------------------------
 st.sidebar.header("⚙️ Settings")
-uploaded_model = st.sidebar.file_uploader("📦 Upload YOLO Model (.pt)", type=["pt"])
-conf_threshold = st.sidebar.slider("Confidence threshold", 0.1, 1.0, 0.25)
-input_type = st.sidebar.radio("Select input type", ["Upload Image", "Upload Video", "Camera Stream"])
 
-# --- Save uploaded model to temp file ---
+uploaded_model = st.sidebar.file_uploader(
+    "📦 Upload RF-DETR Model (.pt)",
+    type=["pt"]
+)
+
+conf_threshold = st.sidebar.slider(
+    "Confidence threshold",
+    min_value=0.1,
+    max_value=1.0,
+    value=0.25
+)
+
+input_type = st.sidebar.radio(
+    "Select input type",
+    ["Upload Image"],
+    captions=["Detect defects from an image file"]
+)
+
+
+# ---------------------------------------------------------
+# Save Uploaded Model Persistently (Stable Path)
+# ---------------------------------------------------------
+MODEL_PATH = "uploaded_model.pt"
+
 if uploaded_model is not None:
-    temp_model_path = tempfile.NamedTemporaryFile(delete=False, suffix=".pt")
-    temp_model_path.write(uploaded_model.read())
-    temp_model_path = temp_model_path.name
+    with open(MODEL_PATH, "wb") as f:
+        f.write(uploaded_model.read())
 else:
-    st.sidebar.warning("Please upload a YOLO model (.pt) file to continue.")
+    st.sidebar.warning("Please upload an RF-DETR model (.pt) file to continue.")
     st.stop()
 
-# --- Load model ---
-@st.cache_resource
-def load_model(model_path):
-    model = RFDETRMedium(pretrain_weights=model_path)
 
-    st.success("✅ Model loaded successfully!")
+# ---------------------------------------------------------
+# Load Model (Only Once)
+# ---------------------------------------------------------
+@st.cache_resource
+def load_model(model_path: str):
+    model = RFDETRMedium(pretrain_weights=model_path)
     return model
 
-model = load_model(temp_model_path)
 
-# st.markdown("Upload an image/video or use camera stream to detect defects.")
+model = load_model(MODEL_PATH)
 
-# --- Upload Image ---
+
+# ---------------------------------------------------------
+# Image Processor Layout
+# ---------------------------------------------------------
 if input_type == "Upload Image":
-    uploaded_file = st.file_uploader("📤 Upload an image", type=["jpg", "jpeg", "png"])
+
+    uploaded_file = st.file_uploader(
+        "📤 Upload an image",
+        type=["jpg", "jpeg", "png"]
+    )
+
     if uploaded_file:
         image = Image.open(uploaded_file)
         col1, col2 = st.columns(2)
+
+        # Display original image
         with col1:
             st.image(image, caption="🖼️ Uploaded Image", use_container_width=True)
-        if st.button("Start Detection"):
-            detections = model.predict(image, threshold=0.5)
-            labels = [
-                f"{model.class_names[int(class_id)]} {confidence:.2f}"
-                for class_id, confidence
-                in zip(detections.class_id, detections.confidence)
-            ]
-            annotated_image = image.copy()
-            annotated_image = sv.BoxAnnotator().annotate(annotated_image, detections)
-            annotated_image = sv.LabelAnnotator().annotate(annotated_image, detections, labels)
-            with col2:
-                st.image(annotated_image, caption="✅ Detected Image", use_container_width=True)
 
+        run_detection = st.button("Start Detection")
+
+        if run_detection:
+
+            # Convert PIL → numpy (smaller memory)
+            image_np = np.array(image)
+
+            # Run model
+            detections = model.predict(image_np, threshold=conf_threshold)
+
+            # Prepare labels
+            labels = [
+                f"{model.class_names[int(cls)]} {conf:.2f}"
+                for cls, conf in zip(detections.class_id, detections.confidence)
+            ]
+
+            # Annotate image
+            annotated = sv.BoxAnnotator().annotate(image_np.copy(), detections)
+            annotated = sv.LabelAnnotator().annotate(annotated, detections, labels)
+
+            # Show results
+            with col2:
+                st.image(annotated, caption="✅ Detection Result", use_container_width=True)
+
+            # ---------------------------------------------------------
+            # Detection Details Table
+            # ---------------------------------------------------------
             with st.expander("📦 Detected Defects Details"):
 
                 if len(detections) == 0:
@@ -77,6 +128,13 @@ if input_type == "Upload Image":
                     })
 
                     st.dataframe(df, use_container_width=True)
+
+            # ---------------------------------------------------------
+            # Memory Cleanup
+            # ---------------------------------------------------------
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
 
 
 # --- Upload Video (stop on first detection) ---
