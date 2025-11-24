@@ -15,8 +15,8 @@ from rfdetr import RFDETRMedium
 # ---------------------
 APP_TITLE = "Defect Detection App"
 MODEL_FILENAME = "uploaded_model.pt"  # stable filename to keep cache consistent
-BOX_COLOR = sv.Color(r=255, g=255, b=0) # (255, 255, 0)  # red in RGB
-BOX_THICKNESS = 4  # pretty thick boxes (keeps original appearance)
+BOX_COLOR = sv.Color(r=255, g=0, b=0)
+BOX_THICKNESS = 6  # pretty thick boxes (keeps original appearance)
 DEFAULT_CONF = 0.25
 
 st.set_page_config(page_title=APP_TITLE, page_icon="🔍", layout="wide")
@@ -65,7 +65,7 @@ st.sidebar.success("✅ Model loaded and cached.")
 # Helper utilities
 # ---------------------
 box_annotator = sv.BoxAnnotator(thickness=BOX_THICKNESS, color=BOX_COLOR)
-label_annotator = sv.LabelAnnotator()
+label_annotator = sv.LabelAnnotator(color=BOX_COLOR, text_thickness=BOX_THICKNESS, text_scale=1.5)
 
 
 def predict_image(np_image: np.ndarray, threshold: float):
@@ -104,7 +104,7 @@ if input_type == "Upload Image":
 
                 # Labels using model's class names (fallback to indices if missing)
                 labels = [
-                    f"{(class_names[int(c)] if len(class_names) > int(c) else int(c))} {float(conf):.2f}"
+                    f"{class_names[int(c)]} {float(conf):.2f}"
                     for c, conf in zip(detections.class_id, detections.confidence)
                 ]
 
@@ -121,7 +121,7 @@ if input_type == "Upload Image":
                         st.write("No defects detected.")
                     else:
                         df = pd.DataFrame({
-                            "Class": [class_names[int(c)] if len(class_names) > int(c) else int(c) for c in detections.class_id],
+                            "Class": [class_names[int(c)] for c in detections.class_id],
                             "Confidence": [round(float(x), 3) for x in detections.confidence],
                             "X1": [round(float(b[0]), 2) for b in detections.xyxy],
                             "Y1": [round(float(b[1]), 2) for b in detections.xyxy],
