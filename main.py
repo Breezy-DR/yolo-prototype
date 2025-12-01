@@ -9,6 +9,39 @@ import torch
 import pandas as pd
 from rfdetr import RFDETRMedium
 
+color_code = [
+    { "class": "short shot",     "color": "#FF0000" },
+    { "class": "scratch",         "color": "#00B050" },
+    { "class": "burry",           "color": "#FFFF00" },
+    { "class": "crack",           "color": "#3282F6" },
+    { "class": "silver",          "color": "#0023F5" },
+    { "class": "weldline",        "color": "#7030A0" },
+    { "class": "ejector mark",     "color": "#FFC000" },
+    { "class": "bubble",          "color": "#EF88BE" },
+    { "class": "kontaminasi",     "color": "#7EB5F7" },
+    { "class": "jetting",         "color": "#B5E61D" },
+    { "class": "ng collar",       "color": "#C0C0C0" },
+    { "class": "minyak",          "color": "#B97A57" },
+    { "class": "bending",         "color": "#EFE4B0" },
+    { "class": "overcut",         "color": "#99D9EA" },
+    { "class": "sinkmark",         "color": "#817F26" },
+    { "class": "flowmark",        "color": "#C00000" },
+    { "class": "burnmark",        "color": "#F08784" },
+    { "class": "gloss",           "color": "#7092BE" },
+    { "class": "mutih",           "color": "#C8BFE7" },
+    { "class": "blackspot",       "color": "#75163F" },
+    { "class": "bintik",          "color": "#FFFE91" },
+    { "class": "other",           "color": "#FFFFFF" }
+]
+
+color_map = {}
+for item in color_code:
+    hex_color = item["color"].lstrip("#")
+    r = int(hex_color[0:2], 16)
+    g = int(hex_color[2:4], 16)
+    b = int(hex_color[4:6], 16)
+    color_map[item["class"]] = (r, g, b)
+
 APP_TITLE = "Defect Detection App"
 MODEL_FILENAME = "uploaded_model.pt"
 BOX_COLOR = "#FF0000"
@@ -52,14 +85,29 @@ def predict_image(np_image: np.ndarray, threshold: float):
 
 def annotate_cv2(image: np.ndarray, detections, class_names):
     annotated = image.copy()
+
     for cls_id, conf, box in zip(detections.class_id, detections.confidence, detections.xyxy):
+        class_name = class_names[int(cls_id)]
+
+        # Get RGB color from dictionary (fallback to white if missing)
+        rgb_color = color_map.get(class_name, (255, 255, 255))
+
         x1, y1, x2, y2 = [int(coord) for coord in box]
-        label = f"{class_names[int(cls_id)]} {float(conf):.2f}"
+        label = f"{class_name} {float(conf):.2f}"
+
+        # Draw bounding box
         cv2.rectangle(annotated, (x1, y1), (x2, y2), rgb_color, thickness=BOX_THICKNESS)
+
+        # Draw text box
         (text_width, text_height), baseline = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 1.0, 2)
         cv2.rectangle(annotated, (x1, y1 - text_height - 10), (x1 + text_width, y1), rgb_color, -1)
-        cv2.putText(annotated, label, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255), 2)
+
+        # Draw text
+        cv2.putText(annotated, label, (x1, y1 - 5),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255), 2)
+
     return annotated
+
 
 def cleanup():
     gc.collect()
