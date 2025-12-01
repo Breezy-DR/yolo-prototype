@@ -91,6 +91,11 @@ def annotate_cv2(image: np.ndarray, detections, class_names):
 
         # Get RGB color from dictionary (fallback to white if missing)
         rgb_color = color_map.get(class_name, (255, 255, 255))
+        r, g, b = rgb_color
+
+        # Calculate luminance to determine text color
+        luminance = 0.299 * r + 0.587 * g + 0.114 * b
+        text_color = (0, 0, 0) if luminance > 180 else (255, 255, 255)
 
         x1, y1, x2, y2 = [int(coord) for coord in box]
         label = f"{class_name} {float(conf):.2f}"
@@ -98,15 +103,16 @@ def annotate_cv2(image: np.ndarray, detections, class_names):
         # Draw bounding box
         cv2.rectangle(annotated, (x1, y1), (x2, y2), rgb_color, thickness=BOX_THICKNESS)
 
-        # Draw text box
+        # Draw label background
         (text_width, text_height), baseline = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 1.0, 2)
         cv2.rectangle(annotated, (x1, y1 - text_height - 10), (x1 + text_width, y1), rgb_color, -1)
 
-        # Draw text
+        # Draw label text with dynamic text color
         cv2.putText(annotated, label, (x1, y1 - 5),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255), 2)
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.0, text_color, 2)
 
     return annotated
+
 
 
 def cleanup():
