@@ -204,57 +204,76 @@ if input_type == "Upload Image":
 #                 cap.release()
 #                 cleanup()
 #
-# # ---------------------
-# # UI: Camera Stream (stop on first detection)
-# # ---------------------
-# elif input_type == "Camera Stream":
-#     if st.button("Start Camera Stream"):
-#         stframe = st.empty()
-#         cap = cv2.VideoCapture(0)
-#         if not cap.isOpened():
-#             st.error("Cannot open camera")
-#             st.stop()
-#
-#         st.write("🔴 Streaming started. Will stop after first detected defect.")
-#         frame_count = 0
-#         try:
-#             while True:
-#                 ret, frame = cap.read()
-#                 if not ret:
-#                     break
-#                 frame_count += 1
-#
-#                 # resize to speed up
-#                 small = cv2.resize(frame, (640, 640))
-#                 img_rgb = cv2.cvtColor(small, cv2.COLOR_BGR2RGB)
-#
-#                 detections = predict_image(img_rgb, threshold=conf_threshold)
-#
-#                 if len(detections) > 0:
-#                     labels = [
-#                         f"{(class_names[int(c)] if len(class_names) > int(c) else int(c))} {float(conf):.2f}"
-#                         for c, conf in zip(detections.class_id, detections.confidence)
-#                     ]
-#
-#                     annotated = box_annotator.annotate(img_rgb.copy(), detections)
-#                     annotated = label_annotator.annotate(annotated, detections, labels)
-#
-#                     st.subheader(f"✅ Defect Detected! Captured Frame #{frame_count}")
-#                     st.image(annotated, use_container_width=True)
-#
-#                     with st.expander("📦 Details"):
-#                         for i, (c, conf, box) in enumerate(zip(detections.class_id, detections.confidence, detections.xyxy), 1):
-#                             cls_name = class_names[int(c)] if len(class_names) > int(c) else int(c)
-#                             st.write(f"**{i}. Defect:** {cls_name} | **Confidence:** {float(conf):.2f}")
-#                             st.caption(f"Bounding Box (xyxy): {[round(float(x),2) for x in box]}")
-#
-#                     break  # stop streaming on first detection
-#
-#                 stframe.image(img_rgb, channels="RGB")
-#
-#         finally:
-#             cap.release()
-#             cleanup()
+# ---------------------
+# UI: Camera Stream (stop on first detection)
+# ---------------------
+elif input_type == "Camera Stream":
+    st.subheader("📷 Live Camera Preview")
+
+    stframe = st.empty()
+    cap = cv2.VideoCapture(0)
+
+    if not cap.isOpened():
+        st.error("Cannot open camera")
+        st.stop()
+
+    st.info("Camera is running. Press **Start Detection** to capture & detect defects.")
+
+    # --- Live Preview Loop (no detection here) ---
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            st.error("Camera frame failed")
+            break
+
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        stframe.image(frame_rgb, channels="RGB")
+
+        # Stop preview when detection starts
+        if st.button("Start Detection"):
+            break
+
+    # --- Capture final frame for detection ---
+    ret, final_frame = cap.read()
+    cap.release()
+
+    if not ret:
+        st.error("Failed to capture frame for detection")
+        st.stop()
+
+    img_rgb = cv2.cvtColor(final_frame, cv2.COLOR_BGR2RGB)
+
+    st.subheader("🔍 Running Detection...")
+    with st.spinner("Processing..."):
+        detections = predict_image(img_rgb, threshold=conf_threshold)
+        annotated = annotate_cv2(img_rgb, detections, class_names)
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.image(img_rgb, caption="📸 Captured Image", use_container_width=True)
+
+    with col2:
+        st.image(annotated, caption="✅ Detection Result", use_container_width=True)
+
+    # --- Detection Details (same style as upload image) ---
+    with st.expander("📦 Detected Defects Details", expanded=False):
+        if len(detections) == 0:
+            st.write("No defects detected.")
+        else:
+            df = pd.DataFrame({
+                "Class ID": [int(c) for c in detections.class_id],
+                "Class": [class_names[int(c)] for c in detections.class_id],
+                "Confidence": [round(float(x), 3) for x in detections.confidence],
+                "X1": [round(float(b[0]), 2) for b in detections.xyxy],
+                "Y1": [round(float(b[1]), 2) for b in detections.xyxy],
+                "X2": [round(float(b[2]), 2) for b in detections.xyxy],
+                "Y2": [round(float(b[3]), 2) for b in detections.xyxy],
+            })
+            st.dataframe(df, use_container_width=True)
+
+    cleanup()
+
 
 # ---------------------
 # Notes
