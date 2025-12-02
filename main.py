@@ -210,38 +210,13 @@ if input_type == "Upload Image":
 elif input_type == "Camera Stream":
     st.subheader("📷 Live Camera Preview")
 
-    stframe = st.empty()
-    cap = cv2.VideoCapture(0)
+    picture = st.camera_input("Take a picture", disabled=False)
 
-    if not cap.isOpened():
-        st.error("Cannot open camera")
-        st.stop()
-
-    st.info("Camera is running. Press **Start Detection** to capture & detect defects.")
-
-    # --- Live Preview Loop (no detection here) ---
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            st.error("Camera frame failed")
-            break
-
-        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        stframe.image(frame_rgb, channels="RGB")
-
-        # Stop preview when detection starts
-        if st.button("Start Detection"):
-            break
-
-    # --- Capture final frame for detection ---
-    ret, final_frame = cap.read()
-    cap.release()
-
-    if not ret:
+    if not picture:
         st.error("Failed to capture frame for detection")
         st.stop()
 
-    img_rgb = cv2.cvtColor(final_frame, cv2.COLOR_BGR2RGB)
+    img_rgb = cv2.cvtColor(picture, cv2.COLOR_BGR2RGB)
 
     st.subheader("🔍 Running Detection...")
     with st.spinner("Processing..."):
