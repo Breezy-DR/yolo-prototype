@@ -212,42 +212,43 @@ elif input_type == "Camera Stream":
 
     picture = st.camera_input("Take a picture", disabled=False)
 
-    if not picture:
+    if picture:
+
+        img_rgb = cv2.cvtColor(picture, cv2.COLOR_BGR2RGB)
+
+        st.subheader("🔍 Running Detection...")
+        with st.spinner("Processing..."):
+            detections = predict_image(img_rgb, threshold=conf_threshold)
+            annotated = annotate_cv2(img_rgb, detections, class_names)
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.image(img_rgb, caption="📸 Captured Image", use_container_width=True)
+
+        with col2:
+            st.image(annotated, caption="✅ Detection Result", use_container_width=True)
+
+        # --- Detection Details (same style as upload image) ---
+        with st.expander("📦 Detected Defects Details", expanded=False):
+            if len(detections) == 0:
+                st.write("No defects detected.")
+            else:
+                df = pd.DataFrame({
+                    "Class ID": [int(c) for c in detections.class_id],
+                    "Class": [class_names[int(c)] for c in detections.class_id],
+                    "Confidence": [round(float(x), 3) for x in detections.confidence],
+                    "X1": [round(float(b[0]), 2) for b in detections.xyxy],
+                    "Y1": [round(float(b[1]), 2) for b in detections.xyxy],
+                    "X2": [round(float(b[2]), 2) for b in detections.xyxy],
+                    "Y2": [round(float(b[3]), 2) for b in detections.xyxy],
+                })
+                st.dataframe(df, use_container_width=True)
+
+        cleanup()
+    else:
         st.error("Failed to capture frame for detection")
         st.stop()
-
-    img_rgb = cv2.cvtColor(picture, cv2.COLOR_BGR2RGB)
-
-    st.subheader("🔍 Running Detection...")
-    with st.spinner("Processing..."):
-        detections = predict_image(img_rgb, threshold=conf_threshold)
-        annotated = annotate_cv2(img_rgb, detections, class_names)
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.image(img_rgb, caption="📸 Captured Image", use_container_width=True)
-
-    with col2:
-        st.image(annotated, caption="✅ Detection Result", use_container_width=True)
-
-    # --- Detection Details (same style as upload image) ---
-    with st.expander("📦 Detected Defects Details", expanded=False):
-        if len(detections) == 0:
-            st.write("No defects detected.")
-        else:
-            df = pd.DataFrame({
-                "Class ID": [int(c) for c in detections.class_id],
-                "Class": [class_names[int(c)] for c in detections.class_id],
-                "Confidence": [round(float(x), 3) for x in detections.confidence],
-                "X1": [round(float(b[0]), 2) for b in detections.xyxy],
-                "Y1": [round(float(b[1]), 2) for b in detections.xyxy],
-                "X2": [round(float(b[2]), 2) for b in detections.xyxy],
-                "Y2": [round(float(b[3]), 2) for b in detections.xyxy],
-            })
-            st.dataframe(df, use_container_width=True)
-
-    cleanup()
 
 
 # ---------------------
