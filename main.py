@@ -57,7 +57,7 @@ st.set_page_config(page_title=APP_TITLE, page_icon="🔍", layout="wide")
 st.title(APP_TITLE)
 
 st.sidebar.header("⚙️ Settings")
-uploaded_model = st.sidebar.file_uploader("📦 Upload RF-DETR Model (.pt)", type=["pt"])
+uploaded_model = st.sidebar.file_uploader("📦 Upload RF-DETR Model (.pt, .pth)", type=["pt", "pth"])
 conf_threshold = st.sidebar.slider("Confidence threshold", 0.01, 1.0, float(DEFAULT_CONF))
 input_type = st.sidebar.radio("Select input type", ["Upload Image", "Camera Stream"])
 
