@@ -212,20 +212,39 @@ elif input_type == "Camera Stream":
 
     picture = st.camera_input("Take a picture")
 
-    # Do NOT show errors if no picture yet
     if picture is None:
         st.info("Please capture an image to start detection.")
         st.stop()
+
+    # Use your custom directory
+    base_save_dir = r"D:\real-downloads\v3\testing\12-des-25"
+    input_dir = os.path.join(base_save_dir, "input")
+    output_dir = os.path.join(base_save_dir, "output")
+
+    os.makedirs(input_dir, exist_ok=True)
+    os.makedirs(output_dir, exist_ok=True)
 
     # Convert UploadedFile → cv2 image
     file_bytes = np.asarray(bytearray(picture.read()), dtype=np.uint8)
     img_bgr = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
     img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
 
+    # Generate unique filename
+    import time
+    ts = time.strftime("%Y%m%d_%H%M%S")
+    input_path = os.path.join(input_dir, f"camera_input_{ts}.png")
+    output_path = os.path.join(output_dir, f"camera_output_{ts}.png")
+
+    # Save input image
+    cv2.imwrite(input_path, cv2.cvtColor(img_rgb, cv2.COLOR_RGB2BGR))
+
     st.subheader("🔍 Running Detection...")
     with st.spinner("Processing..."):
         detections = predict_image(img_rgb, threshold=conf_threshold)
         annotated = annotate_cv2(img_rgb, detections, class_names)
+
+    # Save annotated output
+    cv2.imwrite(output_path, cv2.cvtColor(annotated, cv2.COLOR_RGB2BGR))
 
     col1, col2 = st.columns(2)
 
@@ -235,7 +254,7 @@ elif input_type == "Camera Stream":
     with col2:
         st.image(annotated, caption="✅ Detection Result", use_container_width=True)
 
-    # --- Detection Details (same UI as Upload Image) ---
+    # Details
     with st.expander("📦 Detected Defects Details", expanded=False):
         if len(detections) == 0:
             st.write("No defects detected.")
@@ -252,6 +271,10 @@ elif input_type == "Camera Stream":
             st.dataframe(df, use_container_width=True)
 
     cleanup()
+
+    st.success(f"📁 Saved input to: `{input_path}`")
+    st.success(f"📁 Saved output to: `{output_path}`")
+
 
 
 # ---------------------
