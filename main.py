@@ -216,36 +216,40 @@ elif input_type == "Camera Stream":
         st.info("Please capture an image to start detection.")
         st.stop()
 
-    # Use your custom directory
-    base_save_dir = r"D:/real-downloads/v3/testing/12-des-25"
+    # Your Windows absolute path (using raw string)
+    base_save_dir = r"D:\real-downloads\v3\testing\12-des-25"
     input_dir = os.path.join(base_save_dir, "input")
     output_dir = os.path.join(base_save_dir, "output")
 
     os.makedirs(input_dir, exist_ok=True)
     os.makedirs(output_dir, exist_ok=True)
 
-    # Convert UploadedFile → cv2 image
-    file_bytes = np.asarray(bytearray(picture.read()), dtype=np.uint8)
+    # IMPORTANT: Save raw bytes first (before .read() empties them)
+    raw_bytes = picture.getvalue()
+
+    # Convert bytes → cv2
+    file_bytes = np.asarray(bytearray(raw_bytes), dtype=np.uint8)
     img_bgr = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
     img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
 
-    # Generate unique filename
+    # Timestamp file names
     import time
     ts = time.strftime("%Y%m%d_%H%M%S")
     input_path = os.path.join(input_dir, f"camera_input_{ts}.png")
     output_path = os.path.join(output_dir, f"camera_output_{ts}.png")
 
     # Save input image
-    cv2.imwrite(input_path, cv2.cvtColor(img_rgb, cv2.COLOR_RGB2BGR))
+    cv2.imwrite(input_path, img_bgr)
 
     st.subheader("🔍 Running Detection...")
     with st.spinner("Processing..."):
         detections = predict_image(img_rgb, threshold=conf_threshold)
         annotated = annotate_cv2(img_rgb, detections, class_names)
 
-    # Save annotated output
+    # Save output image
     cv2.imwrite(output_path, cv2.cvtColor(annotated, cv2.COLOR_RGB2BGR))
 
+    # Show results
     col1, col2 = st.columns(2)
 
     with col1:
@@ -254,26 +258,11 @@ elif input_type == "Camera Stream":
     with col2:
         st.image(annotated, caption="✅ Detection Result", use_container_width=True)
 
-    # Details
-    with st.expander("📦 Detected Defects Details", expanded=False):
-        if len(detections) == 0:
-            st.write("No defects detected.")
-        else:
-            df = pd.DataFrame({
-                "Class ID": [int(c) for c in detections.class_id],
-                "Class": [class_names[int(c)] for c in detections.class_id],
-                "Confidence": [round(float(x), 3) for x in detections.confidence],
-                "X1": [round(float(b[0]), 2) for b in detections.xyxy],
-                "Y1": [round(float(b[1]), 2) for b in detections.xyxy],
-                "X2": [round(float(b[2]), 2) for b in detections.xyxy],
-                "Y2": [round(float(b[3]), 2) for b in detections.xyxy],
-            })
-            st.dataframe(df, use_container_width=True)
+    st.success(f"📁 Saved input to: {input_path}")
+    st.success(f"📁 Saved output to: {output_path}")
 
     cleanup()
 
-    st.success(f"📁 Saved input to: `{input_path}`")
-    st.success(f"📁 Saved output to: `{output_path}`")
 
 
 
