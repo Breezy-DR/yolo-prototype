@@ -217,7 +217,7 @@ elif input_type == "Camera Stream":
         st.stop()
 
     # Use your custom directory
-    base_save_dir = r"D:\real-downloads\v3\testing\12-des-25"
+    base_save_dir = r"D:/real-downloads/v3/testing/12-des-25"
     input_dir = os.path.join(base_save_dir, "input")
     output_dir = os.path.join(base_save_dir, "output")
 
