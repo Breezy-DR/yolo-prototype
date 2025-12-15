@@ -75,11 +75,17 @@ def load_model(model_path: str):
     class_names = getattr(model, "class_names", None) or getattr(model, "names", None)
     return {"model": model, "class_names": class_names}
 
+model_uploaded_now = uploaded_model is not None
+
+
 _model_bundle = load_model(MODEL_FILENAME)
 model = _model_bundle["model"]
 class_names = _model_bundle["class_names"] or []
 
-st.sidebar.success("✅ Model loaded and cached.")
+if model_uploaded_now:
+    st.sidebar.success("✅ New model uploaded and loaded.")
+else:
+    st.sidebar.info("📦 Model loaded from cache.")
 
 def predict_image(np_image: np.ndarray, threshold: float):
     return model.predict(np_image, threshold=threshold)
