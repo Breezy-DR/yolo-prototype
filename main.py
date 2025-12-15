@@ -225,6 +225,10 @@ elif input_type == "Camera Stream":
     img_bgr = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
     img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
 
+    # 🔑 Generate ONE timestamp at detection time
+    from datetime import datetime
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
     st.subheader("🔍 Running Detection...")
     with st.spinner("Processing..."):
         detections = predict_image(img_rgb, threshold=conf_threshold)
@@ -235,26 +239,28 @@ elif input_type == "Camera Stream":
     with col1:
         st.image(img_rgb, caption="📸 Captured Image", use_container_width=True)
 
-        # Download ORIGINAL image
+        # Encode original image
         _, input_png = cv2.imencode(".png", img_bgr)
+
         st.download_button(
             label="⬇️ Download Input Image",
             data=input_png.tobytes(),
-            file_name="camera_input.png",
+            file_name=f"{timestamp}_input.png",
             mime="image/png"
         )
 
     with col2:
         st.image(annotated, caption="✅ Detection Result", use_container_width=True)
 
-        # Download ANNOTATED image
+        # Encode annotated image
         _, output_png = cv2.imencode(
             ".png", cv2.cvtColor(annotated, cv2.COLOR_RGB2BGR)
         )
+
         st.download_button(
             label="⬇️ Download Output Image",
             data=output_png.tobytes(),
-            file_name="camera_output.png",
+            file_name=f"{timestamp}_output.png",
             mime="image/png"
         )
 
