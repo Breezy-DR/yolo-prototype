@@ -217,17 +217,7 @@ elif input_type == "Camera Stream":
         st.info("Please capture an image to start detection.")
         st.stop()
 
-    # Your Windows absolute path (using raw string)
-    date_str = datetime.now().strftime("%Y-%m-%d")
-
-    base_save_dir = fr"C:\Users\Dojo-produksi-002\Pictures\streamlit-iai\{date_str}"
-    input_dir = os.path.join(base_save_dir, "input")
-    output_dir = os.path.join(base_save_dir, "output")
-
-    os.makedirs(input_dir, exist_ok=True)
-    os.makedirs(output_dir, exist_ok=True)
-
-    # IMPORTANT: Save raw bytes first (before .read() empties them)
+    # Get raw bytes ONCE
     raw_bytes = picture.getvalue()
 
     # Convert bytes → cv2
@@ -235,36 +225,57 @@ elif input_type == "Camera Stream":
     img_bgr = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
     img_rgb = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2RGB)
 
-    # Timestamp file names
-    import time
-    ts = time.strftime("%Y%m%d_%H%M%S")
-    input_path = os.path.join(input_dir, f"camera_input_{ts}.png")
-    output_path = os.path.join(output_dir, f"camera_output_{ts}.png")
-
-    # Save input image
-    cv2.imwrite(input_path, img_bgr)
-
     st.subheader("🔍 Running Detection...")
     with st.spinner("Processing..."):
         detections = predict_image(img_rgb, threshold=conf_threshold)
         annotated = annotate_cv2(img_rgb, detections, class_names)
 
-    # Save output image
-    cv2.imwrite(output_path, cv2.cvtColor(annotated, cv2.COLOR_RGB2BGR))
-
-    # Show results
     col1, col2 = st.columns(2)
 
     with col1:
         st.image(img_rgb, caption="📸 Captured Image", use_container_width=True)
 
+        # Download ORIGINAL image
+        _, input_png = cv2.imencode(".png", img_bgr)
+        st.download_button(
+            label="⬇️ Download Input Image",
+            data=input_png.tobytes(),
+            file_name="camera_input.png",
+            mime="image/png"
+        )
+
     with col2:
         st.image(annotated, caption="✅ Detection Result", use_container_width=True)
 
-    st.success(f"📁 Saved input to: {input_path}")
-    st.success(f"📁 Saved output to: {output_path}")
+        # Download ANNOTATED image
+        _, output_png = cv2.imencode(
+            ".png", cv2.cvtColor(annotated, cv2.COLOR_RGB2BGR)
+        )
+        st.download_button(
+            label="⬇️ Download Output Image",
+            data=output_png.tobytes(),
+            file_name="camera_output.png",
+            mime="image/png"
+        )
+
+    # Detection details
+    with st.expander("📦 Detected Defects Details", expanded=False):
+        if len(detections) == 0:
+            st.write("No defects detected.")
+        else:
+            df = pd.DataFrame({
+                "Class ID": [int(c) for c in detections.class_id],
+                "Class": [class_names[int(c)] for c in detections.class_id],
+                "Confidence": [round(float(x), 3) for x in detections.confidence],
+                "X1": [round(float(b[0]), 2) for b in detections.xyxy],
+                "Y1": [round(float(b[1]), 2) for b in detections.xyxy],
+                "X2": [round(float(b[2]), 2) for b in detections.xyxy],
+                "Y2": [round(float(b[3]), 2) for b in detections.xyxy],
+            })
+            st.dataframe(df, use_container_width=True)
 
     cleanup()
+
 
 
 
