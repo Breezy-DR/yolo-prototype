@@ -4,6 +4,7 @@ import cv2
 import tempfile
 import numpy as np
 import os
+from datetime import datetime
 import gc
 import torch
 import pandas as pd
@@ -217,7 +218,9 @@ elif input_type == "Camera Stream":
         st.stop()
 
     # Your Windows absolute path (using raw string)
-    base_save_dir = r"D:\real-downloads\v3\testing\12-des-25"
+    date_str = datetime.now().strftime("%Y-%m-%d")
+
+    base_save_dir = fr"C:\Users\Dojo-produksi-002\Pictures\streamlit-iai\{date_str}"
     input_dir = os.path.join(base_save_dir, "input")
     output_dir = os.path.join(base_save_dir, "output")
 
