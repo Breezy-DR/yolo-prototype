@@ -1,4 +1,7 @@
 libgl1
 libglib2.0-0
-libpcre3
-libffi7
+libsm6
+libxext6
+libxrender-dev
+libffi8
+libpcre2-8-0
