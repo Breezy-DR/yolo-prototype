@@ -71,9 +71,24 @@ elif not os.path.exists(MODEL_FILENAME):
 
 @st.cache_resource
 def load_model(model_path: str):
-    model = RFDETRMedium(pretrain_weights=model_path)
-    class_names = getattr(model, "class_names", None) or getattr(model, "names", None)
-    return {"model": model, "class_names": class_names}
+    try:
+        torch.set_num_threads(1)
+
+        model = RFDETRMedium(
+            pretrain_weights=model_path,
+            device="cpu"   # 🔥 VERY IMPORTANT
+        )
+
+        class_names = getattr(model, "class_names", None) or getattr(model, "names", None)
+
+        return {
+            "model": model,
+            "class_names": class_names
+        }
+
+    except Exception as e:
+        st.error(f"Model loading failed: {e}")
+        return None
 
 model_uploaded_now = uploaded_model is not None
 
