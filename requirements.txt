@@ -6,3 +6,4 @@ inference
 supervision
 rfdetr
 torch
+numpy
